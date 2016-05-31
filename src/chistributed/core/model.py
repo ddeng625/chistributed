@@ -93,10 +93,17 @@ class Message(object):
             return SetResponseOKMessage(msg["id"], msg["key"], msg["value"])
         elif msg["type"] == "setResponse" and "error" in msg:
             return SetResponseErrorMessage(msg["id"], msg["error"])
+        elif msg["type"] == "fail":
+            return FailMessage(msg["destination"])
         else:
             return CustomMessage(msg["type"], msg["destination"], msg)
             
         
+class FailMessage(Message):
+    def __init__(self, destination):
+        Message.__init__(self, "fail", "FAIL")
+
+        self.destination = destination
 
 class GetRequestMessage(Message):
     def __init__(self, destination, msg_id, key):
@@ -234,6 +241,16 @@ class DistributedSystem(object):
         
         self.backend.start_node(node_id, extra_params)        
         
+    def send_fail_msg(self, node_id):
+        if not node_id in self.nodes:
+            raise ChistributedException("No such node: {}".format(node_id))
+
+        msg = FailMessage(node_id);
+        self.backend.send_message(node_id, msg)
+
+
+
+
     def send_set_msg(self, node_id, key, value):
         if not node_id in self.nodes:
             raise ChistributedException("No such node: {}".format(node_id))
@@ -309,6 +326,11 @@ class DistributedSystem(object):
                         s += "%s OK: %s = %s" % (msg_name, msg.key, msg.value)
                         s += colorama.Style.RESET_ALL
                         print s
+                elif isinstance(msg, FailMessage):
+                    s = colorama.Style.BRIGHT + colorama.Fore.GREEN
+                    s += "Fail message sent"
+                    s += colorama.Style.RESET_ALL
+                    print s
                         
                 if isinstance(msg, (GetResponseOKMessage, GetResponseErrorMessage)):
                     del self.pending_get_requests[msg.id]
@@ -360,6 +382,7 @@ class DistributedSystem(object):
         
         
     def fail_node(self, node_id):
+        log.warning("failing {}".format(node_id))
         if not node_id in self.nodes:
             raise ChistributedException("No such node: {}".format(node_id))
         
@@ -377,6 +400,7 @@ class DistributedSystem(object):
         
         
     def recover_node(self, node_id, deliver):
+        log.warning("recovering {}".format(node_id))
         if not node_id in self.nodes:
             raise ChistributedException("No such node: {}".format(node_id))
 

@@ -112,7 +112,8 @@ class Interpreter(cmd2.Cmd):
         if node_id not in self.ds.nodes:
             print "No such node: %s" % (node_id)
             return        
-                
+        
+        self.ds.send_fail_msg(node_id)
         self.ds.fail_node(node_id)         
 
         
