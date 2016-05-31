@@ -127,7 +127,9 @@ class Interpreter(cmd2.Cmd):
             print "No such node: %s" % (node_id)
             return        
                 
+
         self.ds.recover_node(node_id, opts.deliver)
+        self.ds.send_recover_msg(node_id)
         
         
     @options([make_option('-n', '--name', type="string"),

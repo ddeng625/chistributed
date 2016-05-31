@@ -9,7 +9,7 @@ import os
 from chistributed.common import ChistributedException
 ioloop.install()
 
-from chistributed.core.model import SetRequestMessage, Node, CustomMessage, GetRequestMessage, Message, FailMessage
+from chistributed.core.model import SetRequestMessage, Node, CustomMessage, GetRequestMessage, Message, FailMessage, RecoverMessage
 import chistributed.common.log as log
 
 
@@ -36,22 +36,23 @@ class ZMQMessage(dict):
             
     @classmethod
     def from_msg(cls, msg):
-        #log.info("in from msg")
         if isinstance(msg, GetRequestMessage):
             fields = {"type": "get",
                       "id": msg.id,
                       "key": msg.key}
             return cls(msg.destination, fields)
         elif isinstance(msg, SetRequestMessage):
-            #log.info("GOT HERE")
             fields = {"type": "set",
                       "id": msg.id,
                       "key": msg.key,
                       "value": msg.value}
             return cls(msg.destination, fields)
         elif isinstance(msg, FailMessage):
-            #log.info("in failmessage")
             fields = {"type": "fail",
+                      "destination": msg.destination}
+            return cls(msg.destination, fields)
+        elif isinstance(msg, RecoverMessage):
+            fields = {"type": "recover",
                       "destination": msg.destination}
             return cls(msg.destination, fields)
         elif isinstance(msg, CustomMessage):
