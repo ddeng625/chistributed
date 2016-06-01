@@ -147,7 +147,12 @@ class Interpreter(cmd2.Cmd):
         for n in nodes1:
             if n not in self.ds.nodes:
                 print "No such node: %s" % (n)
-                return        
+                return    
+
+        # hardcoded since we only need info once
+        self.ds.send_create_partition_msg("node-1", name)
+
+
         
         if len(opts.partition2) == 0:
             nodes2 = None
@@ -156,7 +161,11 @@ class Interpreter(cmd2.Cmd):
             for n in nodes2:
                 if n not in self.ds.nodes:
                     print "No such node: %s" % (n)
-                    return            
+                    return      
+            for n in nodes2:
+                self.ds.send_create_partition_msg(n, name)
+
+
                 
         self.ds.add_partition(name, nodes1, nodes2)    
         
@@ -170,6 +179,9 @@ class Interpreter(cmd2.Cmd):
         if not name in self.ds.partitions:
             print "There is no partition with this name: %s" % (name)
             return             
+        
+        # hardcoded since we only need info once
+        self.ds.send_remove_partition_msg("node-1", name)
                 
         self.ds.remove_partition(name, opts.deliver)        
         

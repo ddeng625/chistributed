@@ -97,6 +97,10 @@ class Message(object):
             return FailMessage(msg["destination"])
         elif msg["type"] == "recover":
             return RecoverMessage(msg["destination"])
+        elif msg["type"] == "createPartition":
+            return CreatePartitionMessage(msg["destination"])
+        elif msg["type"] == "removePartition":
+            return RemovePartitionMessage(msg["destination"])
         else:
             return CustomMessage(msg["type"], msg["destination"], msg)
             
@@ -111,6 +115,20 @@ class FailMessage(Message):
         Message.__init__(self, "fail", "FAIL")
 
         self.destination = destination
+
+class CreatePartitionMessage(Message):
+    def __init__(self, destination, name):
+        Message.__init__(self, "createPartition", "CREATEPARTITION")
+        
+        self.destination = destination
+        self.name = name
+
+class RemovePartitionMessage(Message):
+    def __init__(self, destination, name):
+        Message.__init__(self, "removePartition", "REMOVEPARTITION")
+        
+        self.destination = destination
+        self.name = name
 
 class GetRequestMessage(Message):
     def __init__(self, destination, msg_id, key):
@@ -259,7 +277,21 @@ class DistributedSystem(object):
         if not node_id in self.nodes:
             raise ChistributedException("No such node: {}".format(node_id))
 
-        msg = RecoverMessage(node_id);
+        msg = RecoverMessage(node_id)
+        self.backend.send_message(node_id, msg)
+
+    def send_create_partition_msg(self, node_id, name):
+        if not node_id in self.nodes:
+            raise ChistributedException("No such node: {}".format(node_id))
+        
+        msg = CreatePartitionMessage(node_id, name)
+        self.backend.send_message(node_id, msg)
+
+    def send_remove_partition_msg(self, node_id, name):
+        if not node_id in self.nodes:
+            raise ChistributedException("No such node: {}".format(node_id))
+        
+        msg = RemovePartitionMessage(node_id, name)
         self.backend.send_message(node_id, msg)
 
 
@@ -347,9 +379,19 @@ class DistributedSystem(object):
                     print s
                 elif isinstance(msg, RecoverMessage):
                     s = colorama.Style.BRIGHT + colorama.Fore.GREEN
-                    s += "Fail message sent"
+                    s += "Recover message sent"
                     s += colorama.Style.RESET_ALL
                     print s                       
+                elif isinstance(msg, CreatePartitionMessage):
+                    s = colorama.Style.BRIGHT + colorama.Fore.GREEN
+                    s += "Partition created"
+                    s += colorama.Style.RESET_ALL
+                    print s 
+                elif isinstance(msg, RemovePartitionMessage):
+                    s = colorama.Style.BRIGHT + colorama.Fore.GREEN
+                    s += "Partition removed"
+                    s += colorama.Style.RESET_ALL
+                    print s 
                 if isinstance(msg, (GetResponseOKMessage, GetResponseErrorMessage)):
                     del self.pending_get_requests[msg.id]
                 elif isinstance(msg, (SetResponseOKMessage, SetResponseErrorMessage)):
@@ -382,6 +424,8 @@ class DistributedSystem(object):
         p = Partition(name, [self.nodes[n] for n in nodes1], [self.nodes[n] for n in nodes2])
                 
         self.partitions[name] = p
+
+        log.warning("Creating partition {}".format(name))
         
         
     def remove_partition(self, name, deliver):
@@ -397,6 +441,7 @@ class DistributedSystem(object):
         del self.partitions[name]        
         
         self.msg_queue_lock.release()
+        log.warning("Removing partition {}".format(name))
         
         
     def fail_node(self, node_id):

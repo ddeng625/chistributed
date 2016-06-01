@@ -9,7 +9,7 @@ import os
 from chistributed.common import ChistributedException
 ioloop.install()
 
-from chistributed.core.model import SetRequestMessage, Node, CustomMessage, GetRequestMessage, Message, FailMessage, RecoverMessage
+from chistributed.core.model import SetRequestMessage, Node, CustomMessage, GetRequestMessage, Message, FailMessage, RecoverMessage, CreatePartitionMessage, RemovePartitionMessage
 import chistributed.common.log as log
 
 
@@ -55,6 +55,16 @@ class ZMQMessage(dict):
             fields = {"type": "recover",
                       "destination": msg.destination}
             return cls(msg.destination, fields)
+        elif isinstance(msg, CreatePartitionMessage):
+            fields = {"type": "createPartition",
+                      "destination": msg.destination,
+                      "name": msg.name}
+            return cls(msg.destination, fields)
+        elif isinstance(msg, RemovePartitionMessage):
+            fields = {"type": "removePartition",
+                      "destination": msg.destination,
+                      "name": msg.name}
+            return cls(msg.destination, fields)       
         elif isinstance(msg, CustomMessage):
             fields = {"type": msg.msg_type,
                       "destination": msg.destination}
