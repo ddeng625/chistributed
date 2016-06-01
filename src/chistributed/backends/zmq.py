@@ -82,7 +82,7 @@ class ZMQMessage(dict):
         
 
 class ZMQBackend:
-    def __init__(self, node_executable, pub_endpoint, router_endpoint, debug=False):
+    def __init__(self, node_executable, pub_endpoint, router_endpoint, debug=False, show_node_output=False):
         self.loop = ioloop.IOLoop.instance()
         self.context = zmq.Context()
         
@@ -112,6 +112,7 @@ class ZMQBackend:
         self.node_pids = {}
 
         self.debug = debug
+        self.show_node_output = show_node_output
         self.devnull = None
 
         self.ds = None
@@ -155,9 +156,12 @@ class ZMQBackend:
                  '--pub-endpoint', self.pub_endpoint,
                  '--router-endpoint', self.router_endpoint]
         
+        if self.debug:
+            args += ["--debug"]
+        
         args += extra_params
         
-        if self.debug:
+        if self.debug or self.show_node_output:
             stdout = None
             stderr = None
         else:
